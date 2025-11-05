@@ -44,13 +44,15 @@ pipeline {
             }
             
             steps {
-                echo 'CD Stage 3: Installing SAM CLI inside Docker container...'
-                // Install SAM CLI and its dependencies inside the running container environment
-                sh 'pip install awscli aws-sam-cli'
+               echo 'CD Stage 3: Installing SAM CLI inside Docker container with --user flag...'
+                
+                // CRITICAL FIX 1: Use the --user flag to force installation into a writable location 
+                // (usually ~/.local/bin) to avoid the Permission Denied error.
+                sh 'pip install --user awscli aws-sam-cli'
 
                 echo 'Starting SAM build process.'
-                
-                sh 'sam build --template-file template.yaml'
+                // CRITICAL FIX 2: Use python -m sam to ensure the sam command is found in the path.
+                sh '~/.local/bin/sam build --template-file template.yaml'
 
                 echo 'Deploying to AWS CloudFormation via SAM CLI (Resolving S3 Automatically)...'
                 

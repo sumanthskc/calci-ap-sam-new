@@ -34,10 +34,22 @@ pipeline {
 
         stage('3. CD: SAM Build and Deploy') {
             // This stage runs on the Jenkins host where SAM/AWS CLI must be installed.
-            agent any
+            agent {
+                docker {
+                    // Use the same Python base image
+                    image PYTHON_IMAGE
+                    // If permissions are an issue (common for Docker-in-Docker type use cases):
+                    // args '-v /var/run/docker.sock:/var/run/docker.sock' 
+                }
+            }
             
             steps {
-                echo 'CD Stage 3: Starting SAM build process.'
+                echo 'CD Stage 3: Installing SAM CLI inside Docker container...'
+                // Install SAM CLI and its dependencies inside the running container environment
+                sh 'pip install awscli aws-sam-cli'
+
+                echo 'Starting SAM build process.'
+                
                 sh 'sam build --template-file template.yaml'
 
                 echo 'Deploying to AWS CloudFormation via SAM CLI (Resolving S3 Automatically)...'

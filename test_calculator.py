@@ -12,6 +12,7 @@ class TestCalculator(unittest.TestCase):
     def test_subtract_success(self):
         self.assertEqual(subtract(10, 4), 6)
         self.assertEqual(subtract(1, 1), 0)
+        self.assertEqual(subtract(2, 1), 1)
 
     def test_product_success(self):
         self.assertEqual(product(2, 6), 12)

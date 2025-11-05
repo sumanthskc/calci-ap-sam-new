@@ -3,7 +3,7 @@ def PYTHON_IMAGE = 'python:3.12-slim'
 
 // IMPORTANT: Replace 'aws-deploy-user' with the ID you used when saving your AWS credentials in Jenkins.
 // This ID MUST be set up in Manage Jenkins -> Manage Credentials first.
-def AWS_CREDENTIALS_ID = '4b45ce94-9f38-4058-b72a-b1241d2b068c' 
+def AWS_CREDENTIALS_ID = 'aws-deploy-user' 
 
 pipeline {
     // We define specific agents per stage
@@ -32,12 +32,13 @@ pipeline {
         }
 
         stage('3. CD: SAM Build and Deploy (Host Shell)') {
-            // CRITICAL CHANGE: Use agent any to run commands directly on the host shell.
-            // This requires SAM CLI and AWS CLI to be installed and accessible on the Jenkins host.
+            // Use agent any to run commands directly on the host shell.
+            // This requires SAM CLI and AWS CLI to be installed on the Jenkins host.
             agent any
             
             steps {
                 echo 'CD Stage 3: Starting SAM build process on host shell.'
+                
                 // 1. Build: Prepare the deployment artifact
                 sh 'sam build --template-file template.yaml'
 
@@ -60,7 +61,8 @@ pipeline {
 
     post {
         always {
-            echo 'Pipeline job finished. (CI Goal: close feedback loop)[cite_start]' [cite: 37]
+            // CLEANED: Removed extraneous Groovy characters
+            echo 'Pipeline job finished. (CI Goal: close feedback loop)'
         }
         success {
             echo 'SUCCESS: CI/CD Pipeline completed. Calculator app is deploying to AWS Lambda/API Gateway.'

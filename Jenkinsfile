@@ -52,7 +52,7 @@ pipeline {
                 // 2. Deploy the application, creating/updating the stack
                 // IMPORTANT: Replace 'YOUR_S3_BUCKET' placeholder with a real S3 bucket name. 
                 // SAM requires an S3 bucket to store the packaged code before deployment.
-                sh 'sam deploy --template-file .aws-sam/build/template.yaml --stack-name CalculatorAppStack --capabilities CAPABILITY_IAM --no-confirm-changeset --region us-east-1'
+                sh 'sam deploy --template-file .aws-sam/build/template.yaml --stack-name CalculatorAppStack --capabilities CAPABILITY_IAM --no-confirm-changeset --region us-east-1 --resolve-s3'
             }
         }
     }

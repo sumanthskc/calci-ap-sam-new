@@ -25,7 +25,7 @@ Resources:
           Type: Api
           Properties:
             Path: /calculate
-            Method: post # Accept POST requests for the operations
+            Method: get # Accept POST requests for the operations
 
 Outputs:
   CalculatorApiEndpoint:

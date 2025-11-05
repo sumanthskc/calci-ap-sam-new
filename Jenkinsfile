@@ -1,72 +1,73 @@
-// Define the Docker image for the Continuous Integration (CI) stage
-def PYTHON_IMAGE = 'python:3.12-slim'
-// SAM_IMAGE definition removed, as requested.
+// Defines the Docker image used for the Continuous Integration (CI) stage.
+def PYTHON_IMAGE = 'python:3.12-slim' 
+
+// IMPORTANT: Replace 'aws-deploy-user' with the ID you used when saving your AWS credentials in Jenkins.
+// This ID MUST be set up in Manage Jenkins -> Manage Credentials first.
+def AWS_CREDENTIALS_ID = 'd73f4e59-80ab-438d-aacb-4b271a4cacb3' 
 
 pipeline {
-    // We define specific agents for each stage
+    // We define specific agents per stage
     agent none 
 
     stages {
-        // --- Continuous Integration (CI) Stages ---
-
-        stage('Source Checkout') {
-            // Run on the default Jenkins agent
+        stage('1. Source Checkout') {
             agent any
             steps {
-                echo 'Checking out code from Git...'
-                // The pipeline automatically checks out the code based on the SCM configuration.
+                echo 'CI Stage 1: Checking out code from Git...'
             }
         }
 
-        stage('CI: Unit Tests') {
-            // Use a Docker agent (python:3.9-slim) for a clean, consistent Python environment
+        stage('2. CI: Unit Tests') {
+            // Runs tests inside a consistent Docker environment (CI Goal: repeatable environment)
+            // Requires the 'Docker Pipeline' plugin in Jenkins.
             agent {
                 docker {
                     image PYTHON_IMAGE
-                    // Note: Removed the args line as it is rarely needed just for running unit tests.
                 }
             }
             steps {
-                echo 'Running unit tests...'
-                // Run the unit tests (Step 3b)
-                // If this fails, the pipeline stops here.
+                echo 'CI Stage 2: Running unit tests inside Docker container.'
                 sh 'python -m unittest test_calculator.py'
-                
-                echo 'Unit tests passed! Artifact preparation handled by SAM build later.'
+                echo 'Unit tests passed successfully.'
             }
         }
 
-        // --- Continuous Deployment (CD) Stages ---
-
-        stage('CD: SAM Build and Deploy') {
-            // Use 'agent any' to run the deployment commands directly on the Jenkins host/agent.
-            // This assumes the host has SAM CLI, AWS CLI, and configured AWS credentials.
+        stage('3. CD: SAM Build and Deploy') {
+            // This stage runs on the Jenkins host where SAM/AWS CLI must be installed.
             agent any
             
             steps {
-                echo 'Building SAM template for deployment...'
-                // 1. Package the code/dependencies into the .aws-sam directory
-                // SAM handles the building and packaging of the Python code into a Lambda-ready artifact.
-                sh 'sam build'
-                echo 'Deploying to AWS CloudFormation (CD Goal: deploy safely)...'
-                // 2. Deploy the application, creating/updating the stack
-                // IMPORTANT: Replace 'YOUR_S3_BUCKET' placeholder with a real S3 bucket name. 
-                // SAM requires an S3 bucket to store the packaged code before deployment.
-                sh 'sam deploy --template-file .aws-sam/build/template.yaml --stack-name CalculatorAppStack --capabilities CAPABILITY_IAM --no-confirm-changeset --region us-east-1 --resolve-s3'
+                echo 'CD Stage 3: Starting SAM build process.'
+                sh 'sam build --template-file template.yaml'
+
+                echo 'Deploying to AWS CloudFormation via SAM CLI (Resolving S3 Automatically)...'
+                
+                // CRITICAL FIX: The withCredentials block securely exposes the AWS keys 
+                // as environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) 
+                // for the SAM CLI command to use for authentication, resolving the 'Unable to locate credentials' error.
+                withCredentials([aws(credentialsId: AWS_CREDENTIALS_ID, variablePrefix: 'AWS')]) {
+                    sh 'sam deploy --template-file .aws-sam/build/template.yaml ' +
+                       '--stack-name CalculatorAppStack ' +
+                       '--capabilities CAPABILITY_IAM ' +
+                       '--no-confirm-changeset ' +
+                       '--resolve-s3 ' + // Automatically manages the S3 bucket for staging
+                       '--region us-east-1 '
+                }
+                
+                echo 'CD Goal Achieved: Code deployment triggered to AWS cloud.'
             }
         }
     }
 
     post {
         always {
-            // This closes the feedback loop, notifying the team of the pipeline's status.
-            echo 'Pipeline finished.'
+            echo 'Pipeline job finished. [cite_start](CI Goal: close feedback loop [cite: 37])'
         }
         success {
-            echo 'CI/CD Pipeline Succeeded! Application deployed to AWS.'
+            echo 'SUCCESS: CI/CD Pipeline completed. Calculator app is deploying to AWS Lambda/API Gateway.'
         }
         failure {
-            echo 'CI/CD Pipeline Failed! Check the unit tests or deployment logs for details.'
+            echo 'FAILURE: Pipeline execution failed. Check logs for test failures or deployment errors.'
         }
     }
 }

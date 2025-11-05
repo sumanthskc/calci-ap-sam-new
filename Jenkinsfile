@@ -3,7 +3,7 @@ def PYTHON_IMAGE = 'python:3.12-slim'
 
 // IMPORTANT: Replace 'aws-deploy-user' with the ID you used when saving your AWS credentials in Jenkins.
 // This ID MUST be set up in Manage Jenkins -> Manage Credentials first.
-def AWS_CREDENTIALS_ID = 'd73f4e59-80ab-438d-aacb-4b271a4cacb3' 
+def AWS_CREDENTIALS_ID = '4b45ce94-9f38-4058-b72a-b1241d2b068c' 
 
 pipeline {
     // We define specific agents per stage
@@ -17,9 +17,8 @@ pipeline {
             }
         }
 
-        stage('2. CI: Unit Tests') {
-            // Runs tests inside a consistent Docker environment (CI Goal: repeatable environment)
-            // Requires the 'Docker Pipeline' plugin in Jenkins.
+        stage('2. CI: Unit Tests (Docker Agent)') {
+            // Runs tests inside a consistent, isolated Docker environment
             agent {
                 docker {
                     image PYTHON_IMAGE
@@ -32,40 +31,26 @@ pipeline {
             }
         }
 
-        stage('3. CD: SAM Build and Deploy') {
-            // This stage runs on the Jenkins host where SAM/AWS CLI must be installed.
-            agent {
-                docker {
-                    // Use the same Python base image
-                    image PYTHON_IMAGE
-                    // If permissions are an issue (common for Docker-in-Docker type use cases):
-                    // args '-v /var/run/docker.sock:/var/run/docker.sock' 
-                }
-            }
+        stage('3. CD: SAM Build and Deploy (Host Shell)') {
+            // CRITICAL CHANGE: Use agent any to run commands directly on the host shell.
+            // This requires SAM CLI and AWS CLI to be installed and accessible on the Jenkins host.
+            agent any
             
             steps {
-               echo 'CD Stage 3: Installing SAM CLI inside Docker container with --user flag...'
-                
-                // CRITICAL FIX 1: Use the --user flag to force installation into a writable location 
-                // (usually ~/.local/bin) to avoid the Permission Denied error.
-                sh 'pip install --user awscli aws-sam-cli'
-
-                echo 'Starting SAM build process.'
-                // CRITICAL FIX 2: Use python -m sam to ensure the sam command is found in the path.
-                sh '~/.local/bin/sam build --template-file template.yaml'
+                echo 'CD Stage 3: Starting SAM build process on host shell.'
+                // 1. Build: Prepare the deployment artifact
+                sh 'sam build --template-file template.yaml'
 
                 echo 'Deploying to AWS CloudFormation via SAM CLI (Resolving S3 Automatically)...'
                 
-                // CRITICAL FIX: The withCredentials block securely exposes the AWS keys 
-                // as environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) 
-                // for the SAM CLI command to use for authentication, resolving the 'Unable to locate credentials' error.
+                // 2. Deployment: Securely exposes credentials to the host shell environment
                 withCredentials([aws(credentialsId: AWS_CREDENTIALS_ID, variablePrefix: 'AWS')]) {
                     sh 'sam deploy --template-file .aws-sam/build/template.yaml ' +
                        '--stack-name CalculatorAppStack ' +
                        '--capabilities CAPABILITY_IAM ' +
                        '--no-confirm-changeset ' +
                        '--resolve-s3 ' + // Automatically manages the S3 bucket for staging
-                       '--region us-east-1 '
+                       '--region ap-south-1 '
                 }
                 
                 echo 'CD Goal Achieved: Code deployment triggered to AWS cloud.'
@@ -75,7 +60,7 @@ pipeline {
 
     post {
         always {
-            echo 'Pipeline job finished. [cite_start](CI Goal: close feedback loop [cite: 37])'
+            echo 'Pipeline job finished. (CI Goal: close feedback loop)[cite_start]' [cite: 37]
         }
         success {
             echo 'SUCCESS: CI/CD Pipeline completed. Calculator app is deploying to AWS Lambda/API Gateway.'

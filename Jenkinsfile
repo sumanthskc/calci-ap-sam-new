@@ -3,7 +3,7 @@ def PYTHON_IMAGE = 'python:3.12-slim'
 
 // IMPORTANT: Replace 'aws-deploy-user' with the ID you used when saving your AWS credentials in Jenkins.
 // This ID MUST be set up in Manage Jenkins -> Manage Credentials first.
-def AWS_CREDENTIALS_ID = 'aws-deploy-user' 
+def AWS_CREDENTIALS_ID = '4b45ce94-9f38-4058-b72a-b1241d2b068c' 
 
 pipeline {
     // We define specific agents per stage

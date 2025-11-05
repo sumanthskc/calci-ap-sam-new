@@ -47,7 +47,6 @@ pipeline {
                 echo 'Building SAM template for deployment...'
                 // 1. Package the code/dependencies into the .aws-sam directory
                 // SAM handles the building and packaging of the Python code into a Lambda-ready artifact.
-                sh 'sam build'
 
                 echo 'Deploying to AWS CloudFormation (CD Goal: deploy safely)...'
                 // 2. Deploy the application, creating/updating the stack

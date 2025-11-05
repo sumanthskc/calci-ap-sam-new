@@ -1,5 +1,5 @@
 // Define the Docker image for the Continuous Integration (CI) stage
-def PYTHON_IMAGE = 'python:3.9-slim'
+def PYTHON_IMAGE = 'python:3.12-slim'
 // SAM_IMAGE definition removed, as requested.
 
 pipeline {
@@ -47,7 +47,7 @@ pipeline {
                 echo 'Building SAM template for deployment...'
                 // 1. Package the code/dependencies into the .aws-sam directory
                 // SAM handles the building and packaging of the Python code into a Lambda-ready artifact.
-
+                sh 'sam build'
                 echo 'Deploying to AWS CloudFormation (CD Goal: deploy safely)...'
                 // 2. Deploy the application, creating/updating the stack
                 // IMPORTANT: Replace 'YOUR_S3_BUCKET' placeholder with a real S3 bucket name. 

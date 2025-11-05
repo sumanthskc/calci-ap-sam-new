@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: CI/CD Calculator Application
+
+# Global settings for all functions
+Globals:
+  Function:
+    Timeout: 5 # Lambda timeout in seconds
+
+Resources:
+  CalculatorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: SimpleCalculatorLambda
+      Handler: calculator.lambda_handler # File.function_name
+      Runtime: python3.9 # Specify Python runtime
+      CodeUri: . # Current directory (where the calculator.py lives)
+      MemorySize: 128
+      # Define environment variables (optional, but good practice)
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      Events:
+        CalculatorApi:
+          Type: Api
+          Properties:
+            Path: /calculate
+            Method: post # Accept POST requests for the operations
+
+Outputs:
+  CalculatorApiEndpoint:
+    Description: "API Gateway endpoint URL for Prod environment"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/calculate"

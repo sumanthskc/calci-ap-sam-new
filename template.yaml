@@ -13,7 +13,7 @@ Resources:
     Properties:
       FunctionName: SimpleCalculatorLambda
       Handler: calculator.lambda_handler # File.function_name
-      Runtime: python3 # Specify Python runtime
+      Runtime: python3.12.3 # Specify Python runtime
       CodeUri: . # Current directory (where the calculator.py lives)
       MemorySize: 128
       # Define environment variables (optional, but good practice)
